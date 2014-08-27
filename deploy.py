@@ -5,8 +5,6 @@
     ___________________________________
 ___/ YOUR GOOGLE APPENGINE FOLDER PATH \__________________________________________________
                                                                                        '''
-
-GOOGLE_APPENGINE_PATH = "C:\\Program Files (x86)\\Google\\google_appengine"
 MODE = 'UPDATE'
 
 '''
@@ -59,8 +57,23 @@ def auto_newline(string, bound) :
         string = string[bound:]
 
 """ Path Setting : MODIFY YOUR GOOGLE-APPENGINE PATH """
+import platform
+OS = platform.system()
+
+if OS == 'Darwin' : GOOGLE_APPENGINE_PATH = "/usr/local/google_appengine"
+elif OS == 'Windows' : GOOGLE_APPENGINE_PATH = "C:\\Program Files (x86)\\Google\\google_appengine"
+else : raise ValueError('OS VALUE IS NOT VALID : %s not in [Darwin, Windows]' % OS)
+
 import os, sys
-sys.path.insert(0, GOOGLE_APPENGINE_PATH)
+
+try :
+    sys.path.insert(0, GOOGLE_APPENGINE_PATH)
+    from appcfg import run_file
+except:
+    GOOGLE_APPENGINE_PATH = "C:\\Program Files\\Google\\Cloud SDK\\google-cloud-sdk\\platform\\google_appengine"
+    sys.path.insert(0, GOOGLE_APPENGINE_PATH)
+    from appcfg import run_file
+
 
 """ Deploy """
 print "======= Google App Engine Deploy Script ========================================"
@@ -82,7 +95,7 @@ print auto_newline(
 print "================================================================================"
 
 """ Execute """
-from appcfg import run_file
+
 while len(sys.argv) > 0 :
     sys.argv.pop()
 sys.argv.append(cfg_path)

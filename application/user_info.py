@@ -1,3 +1,3 @@
-PUSHER_APP_ID = 'your-app-id'
-PUSHER_KEY = 'your-public-key'
-PUSHER_SECRET = 'your-secret-key'
+PUSHER_APP_ID='86990'
+PUSHER_KEY='98b47c799ebb605fafdc'
+PUSHER_SECRET='0fdd08ff1dc3466a61ac'
