@@ -1,84 +1,103 @@
 $(function() {
-    var pusher = new Pusher(PUSHER_KEY),
-        testChannel =pusher.subscribe('morningpusher'),
-        $messages = $('.messages'),
-        $inputMessage = $('.inputMessage'),
-        chatPage = $('.chat.page');
+	var pusher = new Pusher(PUSHER_KEY),
+		testChannel =pusher.subscribe('morningpusher'),
+		broadcast = pusher.subscribe('br'), // 1-1 add
+		$window = $(window),                // 1-1 add
+		$messages = $('.messages'),
+		$inputMessage = $('.inputMessage'),
+		$usernameInput = $('.usernameInput[name=username]'),    
+		$loginPage = $('.login.page'),
+		$chatPage = $('.chat.page');
 
-    /*
-    $.ajax({
-      type: "POST",
-      url: url,
-      data: data,
-      success: success,
-      dataType: dataType
-    });
-    */
+	var username;           
+	
+	$usernameInput.focus();
+	
+	/*
+	$.ajax({
+	  type: "POST",
+	  url: url,
+	  data: data,
+	  success: success,
+	  dataType: dataType
+	});
+	*/
 
-    var initial_delay = 1500;
-    setTimeout(function () {
-        addChatMessage({'username':'user1', 'message':'hello?'});
-    },initial_delay + 500)
-    setTimeout(function () {
-        addChatMessage({'username':'user2', 'message':'HELLO?'});
-    },initial_delay + 1000)
-    setTimeout(function () {
-        addChatMessage({'username':'user2', 'message':'I know who you are'});
-    },initial_delay + 1500)
-    setTimeout(function () {
-        addChatMessage({'username':'user1', 'message':'?????????'});
-    },initial_delay + 2000)
 
-    testChannel.bind('echo', function(data) {
-        data['username'] = "Your Name";
-        addChatMessage(data);
-    });
+	broadcast.bind('new_message', function(data) {
+		addChatMessage(data);
+	});
 
-    setTimeout(function () {
-        $.post('/api/echo', {"message":"Hello World!"});
-    },initial_delay +  4000)
-    setTimeout(function () {
-        $.post('/api/echo', {"message":"I love Chicken"});
-    },initial_delay +  5000)
-    setTimeout(function () {
-        $.post('/api/echo', {"message":"Where is Chicken"});
-    },initial_delay +  6000)
-    setTimeout(function () {
-        $.post('/api/echo', {"message":"We need Chiecken Now!"});
-    },initial_delay +  7000)
+	
+	function addChatMessage(data) {
+		var $usernameDiv = $('<span class="username"></span>');
+		$usernameDiv.css("color", getUsernameColor(data.username));
+		$usernameDiv.text(data.username);
 
-    function addChatMessage(data) {
-        var $usernameDiv = $('<span class="username"></span>');
-        $usernameDiv.css("color", getUsernameColor(data.username));
-        $usernameDiv.text(data.username);
+		var $messageBodyDiv = $('<span class="messageBody"></span>');
+		$messageBodyDiv.text(data.message);
 
-        var $messageBodyDiv = $('<span class="messageBody"></span>');
-        $messageBodyDiv.text(data.message);
+		var typingClass = data.typing ? 'typing' : '';
+		var $messageDiv = $('<li class="message ' + typingClass + '"></li>');
+		$messageDiv.append($usernameDiv)
+			.append($messageBodyDiv)
+			.data('username', data.username);
 
-        var typingClass = data.typing ? 'typing' : '';
-        var $messageDiv = $('<li class="message ' + typingClass + '"></li>');
-        $messageDiv.append($usernameDiv)
-            .append($messageBodyDiv)
-            .data('username', data.username);
+		addMessageElement($messageDiv);
+	}
 
-        addMessageElement($messageDiv);
-    }
+	function addMessageElement(el) {
+		var $el = $(el);
+		$messages.append($el);
 
-    function addMessageElement(el) {
-        var $el = $(el);
-        $messages.append($el);
+		$messages[0].scrollTop = $messages[0].scrollHeight;
+	}
 
-        $messages[0].scrollTop = $messages[0].scrollHeight;
-    }
+	function getUsernameColor(username) {
+		// Compute hash code
+		var hash = 7;
+		for (var i = 0; i < username.length; i++) {
+			hash = username.charCodeAt(i) + (hash << 5) - hash;
+		}
+		// Calculate color
+		var index = Math.abs(hash % 360);
+		return "hsl(" + index + ", 77%, 60%)";
+	}
 
-    function getUsernameColor(username) {
-        // Compute hash code
-        var hash = 7;
-        for (var i = 0; i < username.length; i++) {
-            hash = username.charCodeAt(i) + (hash << 5) - hash;
+	function sendMessage () {
+        var message = $inputMessage.val().trim();
+
+        // if there is a non-empty message
+        if (message) {
+            $inputMessage.val('');
+            $.post('/api/call/new_message', {
+                "message": message,
+                "username": username
+            });
         }
-        // Calculate color
-        var index = Math.abs(hash % 360);
-        return "hsl(" + index + ", 77%, 60%)";
     }
+
+    function setUsername() {
+        var __username = $usernameInput.val().trim();
+
+        // If the username is valid
+        if (__username) {
+            username = __username;
+            $loginPage.fadeOut();
+            $chatPage.show();
+            $inputMessage.focus();
+        }
+    }
+
+	$window.keydown(function(event) {
+        // When the client hits ENTER on their keyboard
+        if (event.which === 13) {
+        	if (username) {
+                sendMessage();
+            } else {
+                setUsername();
+                $usernameInput.blur();
+            }
+        }
+    });
 });
